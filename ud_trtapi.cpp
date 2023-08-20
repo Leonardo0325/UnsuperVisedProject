@@ -5,14 +5,14 @@
 #include "ud_trtapi.h"
 #include "ud_trtcore.h"
 
-// \! ¹¹Ôìº¯Êı
+// \! æ„é€ å‡½æ•°
 CTrtAPI::CTrtAPI()
 {
 	m_pTRTCore = nullptr;
 	m_pTRTCore = new CTrtCore();
 }
 
-// \! Îö¹¹º¯Êı
+// \! ææ„å‡½æ•°
 CTrtAPI::~CTrtAPI()
 {
 	if (m_pTRTCore != nullptr)
@@ -21,87 +21,50 @@ CTrtAPI::~CTrtAPI()
 	}
 }
 
-// \! ³õÊ¼»¯
-// \@param:params     ³õÊ¼»¯²ÎÊı
-// \@param:nErrnoFlag ³õÊ¼»¯´íÎóÂë£¬ÏêÇé¼ûparams.h
+// \! åˆå§‹åŒ–
+// \@param:params     åˆå§‹åŒ–å‚æ•°
+// \@param:nErrnoFlag åˆå§‹åŒ–é”™è¯¯ç ï¼Œè¯¦æƒ…è§params.h
 std::shared_ptr<TRTCore_ctx> CTrtAPI::init(const PARAMS_S& params, PD_S32& nErrnoFlag)
 {
-	// 1. ´´½¨ÈÕÖ¾
+	// 1. åˆ›å»ºæ—¥å¿—
 	loguru::add_file(params.log_path.c_str(), loguru::Append, loguru::Verbosity_MAX);
 
-	// 2. ³õÊ¼»¯Ò»¸öCTrtCoreÊµÀı
+	// 2. åˆå§‹åŒ–ä¸€ä¸ªCTrtCoreå®ä¾‹
 
 	if (m_pTRTCore == nullptr) {
 		LOG_F(INFO, "new CTrtCore() Error!!!!");
 		return nullptr;
 	}
 
-	// 3. ³õÊ¼»¯m_pTRTCore
+	// 3. åˆå§‹åŒ–m_pTRTCore
 	return m_pTRTCore->init(params, nErrnoFlag);
 }
 
 
-// \! Òì³£¼ì²â
-// \@param ctx:Ö´ĞĞÉÏÏÂÎÄ
-// \@param vInCCoreImages:ÊäÈëÍ¼Æ¬ÁĞ±í£¬CCoreImage
-// \@param vOutCCoreImages:Êä³öÍ¼Æ¬Êı×é£¬CCoreImage
-// \@param threshold:ãĞÖµ
-// \@param maxValue:×î´óÖµ£¬¹éÒ»»¯Ê±Ê¹ÓÃ
-// \@param minValue:×îĞ¡Öµ£¬¹éÒ»»¯Ê±Ê¹ÓÃ
-// \@param pixel_value:¶şÖµ»¯Í¼ÏñµÄÖµ£¬¹éÒ»»¯Ê±Ê¹ÓÃ
-returnResult_S CTrtAPI::anomaly(cv::Mat&InferImg, std::shared_ptr<TRTCore_ctx> ctx, const std::vector<CCoreImage*>& vInCoreImages, std::vector<CCoreImage*>& vOutCoreImages, const PD_S32 threshold)
-{
-	LOG_F(INFO, "anomaly start ......");
-	cv::Mat M, M1, T, F;
-	// 1.¼ì²éÖ¸ÕëÊÇ·ñÎª¿Õ
-	if (ctx == nullptr || m_pTRTCore == nullptr) {
-		LOG_F(INFO, "Ö¸ÕëÎª¿Õ");
-		return returnResult_S(M, M1, T, F, PD_UNKNOW_ERROR);
-	}
-		// 3.½«CoreImage×ª³ÉOpencv
-		std::vector<cv::Mat> input_images, output_images;
-		for (PD_S32 i = 0; i < vInCoreImages.size(); i++) {
-			cv::Mat cv_img = cv::Mat(
-				vInCoreImages[i]->height_,
-				vInCoreImages[i]->width_,
-				CV_8UC(vInCoreImages[i]->channal_),
-				vInCoreImages[i]->imagedata_,
-				vInCoreImages[i]->imagestep_).clone();
-			/*
-			("sad",cv_img);
-			cv::waitKey(0);*/
-			input_images.push_back(cv_img);
-		}
-		returnResult_S ImgResults;
-		// 4.ºËĞÄ¿âÍÆÀí
-		ImgResults = m_pTRTCore->anomaly(ctx, input_images, output_images, threshold);
+// \! å¼‚å¸¸æ£€æµ‹
+// \@param ctx:æ‰§è¡Œä¸Šä¸‹æ–‡
+// \@param vInCCoreImages:è¾“å…¥å›¾ç‰‡åˆ—è¡¨ï¼ŒCCoreImage
+// \@param vOutCCoreImages:è¾“å‡ºå›¾ç‰‡æ•°ç»„ï¼ŒCCoreImage
+// \@param threshold:é˜ˆå€¼
+// \@param maxValue:æœ€å¤§å€¼ï¼Œå½’ä¸€åŒ–æ—¶ä½¿ç”¨
+// \@param minValue:æœ€å°å€¼ï¼Œå½’ä¸€åŒ–æ—¶ä½¿ç”¨
+// \@param pixel_value:äºŒå€¼åŒ–å›¾åƒçš„å€¼ï¼Œå½’ä¸€åŒ–æ—¶ä½¿ç”¨
 
-		// 5. opencv -> coreimage
-		PD_S32 input_batch, input_channels, input_height, input_width;
-		m_pTRTCore->getInputDims(ctx, input_batch, input_channels, input_height, input_width);
-		PD_S32 output_batch, output_channel, output_height, output_width;
-		m_pTRTCore->getOutputDims(ctx, output_batch, output_channel, output_height, output_width);
-		//cv::imshow("Sdd", ImgResults.Img);
-		//cv::waitKey(0);
-		return ImgResults;
-	
-}
-
-// \! »ñÈ¡ÏÔ¿¨ÊıÁ¿
-// \@param ctx:Ö´ĞĞÉÏÏÂÎÄ
-// \@param number:gpuÊıÁ¿
+// \! è·å–æ˜¾å¡æ•°é‡
+// \@param ctx:æ‰§è¡Œä¸Šä¸‹æ–‡
+// \@param number:gpuæ•°é‡
 PD_S32 CTrtAPI::getNumberGPU(std::shared_ptr<TRTCore_ctx> ctx, PD_S32& number)
 {
 	return this->m_pTRTCore->getNumberGPU(ctx, number);
 }
 
-// \! »ñÈ¡ÊäÈëÎ¬¶È
-// \@param ctx:Ö´ĞĞÉÏÏÂÎÄ
+// \! è·å–è¾“å…¥ç»´åº¦
+// \@param ctx:æ‰§è¡Œä¸Šä¸‹æ–‡
 // \@param nBatch:batchsize
 // \@param nChannels:channels
 // \@param nHeight:height
 // \@param nWidth:width
-// \@param index:µÚindex¸öÊäÈë£¬¼ÓÈëonnxÓĞ¶à¸öÊäÈë£¬ÔòÍ¨¹ıindexÀ´Ö¸¶¨
+// \@param index:ç¬¬indexä¸ªè¾“å…¥ï¼ŒåŠ å…¥onnxæœ‰å¤šä¸ªè¾“å…¥ï¼Œåˆ™é€šè¿‡indexæ¥æŒ‡å®š
 PD_S32 CTrtAPI::getInputDims(std::shared_ptr<TRTCore_ctx> ctx, PD_S32& nBatch, PD_S32& nChannels, PD_S32& nHeight, PD_S32& nWidth, PD_S32 index)
 {
 	if (ctx == nullptr || m_pTRTCore == nullptr) {
@@ -112,12 +75,12 @@ PD_S32 CTrtAPI::getInputDims(std::shared_ptr<TRTCore_ctx> ctx, PD_S32& nBatch, P
 	return PD_OK;
 }
 
-// \! »ñÈ¡Êä³öÎ¬¶È
-// \@param ctx£ºÖ´ĞĞÉÏÏÂÎÄ
+// \! è·å–è¾“å‡ºç»´åº¦
+// \@param ctxï¼šæ‰§è¡Œä¸Šä¸‹æ–‡
 // \@param nBatch:batchsize
 // \@param nHeight:Height
 // \@param nWidth:Width
-// \@param index:µÚindex¸öÊä³ö£¬¼ÙÈçonnxÓĞ¶à¸öÊä³ö£¬ÔòÍ¨¹ıindexÀ´Ö¸¶¨
+// \@param index:ç¬¬indexä¸ªè¾“å‡ºï¼Œå‡å¦‚onnxæœ‰å¤šä¸ªè¾“å‡ºï¼Œåˆ™é€šè¿‡indexæ¥æŒ‡å®š
 PD_S32 CTrtAPI::getOutputDims(std::shared_ptr<TRTCore_ctx> ctx, PD_S32& nBatch, PD_S32& nHeight, PD_S32& nWidth, PD_S32 index)
 {
 	if (ctx == nullptr || m_pTRTCore == nullptr) {
