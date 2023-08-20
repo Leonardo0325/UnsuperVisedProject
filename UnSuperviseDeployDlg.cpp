@@ -362,21 +362,6 @@ void CUnSuperviseDeployDlg::MatToCImage(cv::Mat& mMatImg, CImage& cImage)
 	int nStep = cImage.GetPitch();					//每行的字节数,注意这个返回值有正有负
 
 
-	if (1 == nChannels)								//对于单通道的图像需要初始化调色板
-	{
-		RGBQUAD* rgbquadColorTable;
-		int nMaxColors = 256;
-		rgbquadColorTable = new RGBQUAD[nMaxColors];
-		cImage.GetColorTable(0, nMaxColors, rgbquadColorTable);
-		for (int nColor = 0; nColor < nMaxColors; nColor++)
-		{
-			rgbquadColorTable[nColor].rgbBlue = (uchar)nColor;
-			rgbquadColorTable[nColor].rgbGreen = (uchar)nColor;
-			rgbquadColorTable[nColor].rgbRed = (uchar)nColor;
-		}
-		cImage.SetColorTable(0, nMaxColors, rgbquadColorTable);
-		delete[]rgbquadColorTable;
-	}
 
 
 	for (int nRow = 0; nRow < nHeight; nRow++)
@@ -532,36 +517,7 @@ void CUnSuperviseDeployDlg::ShowAdd(CImage&imgLightImg)
 	fImgHigh = imgLightImg.GetHeight();//获取图片的宽 高
 	k = fImgHigh / fImgWid;//获得图片的宽高比
 
-	CWnd* pWnd = NULL;
-	pWnd = GetDlgItem(IDC_Add);//获取控件句柄
-	pWnd->GetClientRect(&rect);//获取Picture Control控件的客户区
-	fRecWid = rect.Width();
-	fRecHigh = rect.Height();//获得控件的宽高比
-	t = fRecHigh / fRecWid;//获得控件的宽高比
-	if (k >= t)
-	{
 
-		rect.right = floor(rect.bottom / k);
-		rect.left = (fRecWid - rect.right) / 2;
-		rect.right = floor(rect.bottom / k) + (fRecWid - rect.right) / 2;
-	}
-	else
-	{
-		rect.bottom = floor(k * rect.right);
-		rect.top = (fRecHigh - rect.bottom) / 2;
-		rect.bottom = floor(k * rect.right) + (fRecHigh - rect.bottom) / 2;
-	}
-	//相关的计算为了让图片在绘图区居中按比例显示，如果图片很宽但是不高，就上下留有空白区；如果图片很高而不宽就左右留有空白区，并且保持两边空白区一样大
-
-	CDC* pDc = NULL;
-	pDc = pWnd->GetDC();//获取picture control的DC
-	int nModeOld = SetStretchBltMode(pDc->m_hDC, STRETCH_HALFTONE);//设置指定设备环境中的位图拉伸模式
-
-	GetDlgItem(IDC_Add)->ShowWindow(FALSE);
-	GetDlgItem(IDC_Add)->ShowWindow(TRUE);
-	imgLightImg.StretchBlt(pDc->m_hDC, rect, SRCCOPY);//显示函数
-	SetStretchBltMode(pDc->m_hDC, nModeOld);
-	ReleaseDC(pDc);//释放指针空间
 }
 
 UNIT _cdecl CUnSuperviseDeployDlg::dlgDeployThread(LPVOID lparam)
@@ -621,19 +577,6 @@ void CUnSuperviseDeployDlg::OnBnClickedDeploy()
 	imgAdd = ImgResults.FinalImg;
 	imgThresh = ImgResults.ThreshImg;
 
-	CImage cDstImg,cAddImg, cImgThresh;
-	MatToCImage(img, cDstImg);
-	MatToCImage(imgAdd, cAddImg);
-	MatToCImage(imgThresh, cImgThresh);
-	CWnd* pDstWnd = NULL;
-	pDstWnd = GetDlgItem(IDC_DstImg);//获取控件句柄
-	CWnd* pAddWnd = NULL;
-	pAddWnd = GetDlgItem(IDC_Add);//获取控件句柄
-	CWnd* pThreshWnd = NULL;
-	pThreshWnd = GetDlgItem(IDC_Thre);//获取控件句柄
-	ShowImg(cDstImg, pDstWnd);
-	ShowImg(cAddImg, pAddWnd);
-	ShowImg(cImgThresh, pThreshWnd);
 
 
 }
@@ -711,59 +654,7 @@ void CUnSuperviseDeployDlg::dlgAllDeployFunc()
 	int nRightNums = 0;
 	string sFoldName = getFileName(sSrcPth);
 	CString strLowValue, strWuValue;
-	for (size_t k = 0; k < vResult.size(); k++)     //读取扫描物体的所有结构光图片
-	{
-		cv::Mat SrcImg = cv::imread(vResult[k]);
-		cv::Mat SrcClone = SrcImg.clone();
-		ImgResults = m_pcTrtDeploy->run(vResult[k], nThreshValue, ModelPth);
-		cv::Mat img, imgThresh, imgAdd, ImgSingle, imgMask;
-		img = ImgResults.Img;
-		imgAdd = ImgResults.FinalImg;
-		imgThresh = ImgResults.ThreshImg;
-		ImgSingle = ImgResults.Img1;
-		CImage cSrcImg, cDstImg, cAddImg, cImgThresh;
-		MatToCImage(SrcImg, cSrcImg);
-		MatToCImage(img, cDstImg);
-		MatToCImage(imgAdd, cAddImg);
-		MatToCImage(imgThresh, cImgThresh);
-		CWnd* pSrcWnd = NULL;
-		pSrcWnd = GetDlgItem(IDC_SrcImg);//获取控件句柄
-		CWnd* pDstWnd = NULL;
-		pDstWnd = GetDlgItem(IDC_DstImg);//获取控件句柄
-		CWnd* pAddWnd = NULL;
-		pAddWnd = GetDlgItem(IDC_Add);//获取控件句柄
-		CWnd* pThreshWnd = NULL;
-		pThreshWnd = GetDlgItem(IDC_Thre);//获取控件句柄
-		ShowImg(cSrcImg, pSrcWnd);
-		ShowImg(cDstImg, pDstWnd);
-		ShowImg(cAddImg, pAddWnd);
-		ShowImg(cImgThresh, pThreshWnd);
-		if (nThreshValue == 0) nThreshValue = 90;
-		int value = nThreshValue;
-		cv::threshold(ImgSingle, imgMask, nThreshValue, 255, cv::THRESH_BINARY);
 
-		//std::vector<std::vector<cv::Point>> contours;
-		//cv::findContours(imgMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-		// 创建一个空白图像作为结果
-		//cv::Mat resultImage = cv::Mat::zeros(ImgSingle.size(), CV_8UC3);
-		// 将轮廓绘制到结果图像上
-		//cv::drawContours(resultImage, contours, -1, cv::Scalar(255, 255, 0));
-		// 将结果图像与原始图像相加
-		//cv::add(imgAdd, resultImage, resultImage);
-
-		double minValue, maxValue;
-		cv::Point minLocation, maxLocation;
-		cv::Mat mJugeThresh = ImgResults.Img1;
-		// 获取矩阵的最小值和最大值以及它们的位置
-		cv::minMaxLoc(mJugeThresh, &minValue, &maxValue, &minLocation, &maxLocation);
-		if (sFoldName == "bad" && maxValue >= nThreshValue)
-		{
-			nRightNums++;
-			std::string fileName = getFileName(vResult[k]);
-			cv::imwrite("../result/bad/" + fileName, imgAdd);
-			strValue.Format(_T("%d"), nRightNums);
-			cRightEdit.SetWindowText(strValue);
-		}
 		else if (sFoldName == "bad" && maxValue < nThreshValue)
 		{
 			nLouNums++;
@@ -824,72 +715,6 @@ void CUnSuperviseDeployDlg::dlgAllDeployFunc()
 	}*/
 }
 
-void CUnSuperviseDeployDlg::OnBnClickedAlldeploy()
-{
-	ShowString("批量推理");
-	UNIT uDeploy;
-	(void*)_beginthreadex(NULL, 0, dlgALLDeployThread, this, 0, &uDeploy);
-	}
-	
-
-void CUnSuperviseDeployDlg::OnBnClickedFirstimg()
-{
-	ShowString("打开图像");
-	CButton * pOpencvRadio = (CButton*)GetDlgItem(IDC_OpencvRADIO);
-	CButton * pLabelRadio = (CButton*)GetDlgItem(IDC_LabelRADIO);
-	if (pOpencvRadio->GetCheck() == BST_CHECKED)
-	{
-		CFileDialog FileDlg(TRUE, _T("png"), NULL, 0, _T("image Files(*.bmp; *.jpg;*.png)|*.JPG;*.PNG;*.BMP|All Files (*.*) |*.*|"), this);
-		FileDlg.DoModal();
-		m_pstrFilePath = FileDlg.GetPathName();		//文件路径
-		m_pstrFileName = FileDlg.GetFileName();	//文件名
-		m_sPicPath = FileDlg.GetPathName();
-		if (m_pstrFilePath == _T(""))
-		{
-			return;
-		}
-		std::string strFilePath(m_pstrFilePath);
-		cv::Mat SrcImg = cv::imread(strFilePath);
-		cv::namedWindow("SrcImage", cv::WINDOW_NORMAL);
-		cv::imshow("SrcImage", SrcImg);
-		cv::waitKey(0);
-	}
-	else if (pLabelRadio->GetCheck() == BST_CHECKED)
-	{
-		OpenPic();
-	}
-}
-void CUnSuperviseDeployDlg::ShowMultilineText(CEdit& edit, CString& strInfo)
-{
-	int nLen = edit.GetWindowTextLength();	// 获取此前已显示的文本长度
-	edit.SetSel(nLen, nLen); // SetSel到文本末尾
-	edit.ReplaceSel(strInfo+ _T("\r\n")); // 显示要增加显示的文本
-}
-void CUnSuperviseDeployDlg::ShowString(CString name)
-{
-	// 获取当前时间
-	std::time_t currentTime = std::time(nullptr);
-	// 将时间转换本地时间
-	std::tm* localTime = std::localtime(&currentTime);
-	// 格式化时间为字符串
-	char timeString[100];
-	std::strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", localTime);
-	m_cLogIndex.Format(_T("%s"), timeString);
-	m_cLogtent = m_cLogIndex + LoguruText + name + LoguruText;
-	ShowMultilineText(m_editLoguru, m_cLogtent);
-	nLogIndex++;
-}
-
-void CUnSuperviseDeployDlg::OnBnClickedOpencvradio()
-{
-	ShowString("使用OpenCV打开图像");
-}
-
-
-void CUnSuperviseDeployDlg::OnBnClickedLabelradio()
-{
-	ShowString("使用MFC打开图像");
-}
 
 
 void CUnSuperviseDeployDlg::OnBnClickedSavepreprocess()
