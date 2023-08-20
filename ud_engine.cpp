@@ -1,7 +1,7 @@
 
 #include "ud_engine.h"
 
-// buildºÍ¼ÓÔØÒıÇæµÄÊ±ºòĞèÒªÓÃµ½Õâ¸ö
+// buildå’ŒåŠ è½½å¼•æ“çš„æ—¶å€™éœ€è¦ç”¨åˆ°è¿™ä¸ª
 //SampleErrorRecorder gRecorder;
 namespace sample
 {
@@ -23,15 +23,15 @@ namespace sample
 	}
 } // namespace sample
 
-// \!ÒıÇæ¹¹Ôì
-// \@param ´«ÈëPARAMS_S²ÎÊı
-// \@param ´íÎó²ÎÊınErrorFlag
+// \!å¼•æ“æ„é€ 
+// \@param ä¼ å…¥PARAMS_Så‚æ•°
+// \@param é”™è¯¯å‚æ•°nErrorFlag
 CTrtEngine::CTrtEngine(const PARAMS_S& params, PD_S32& nErrnoFlag)
 {
-	// 1.³õÊ¼»¯Engine£ºbuild»òÕßload
+	// 1.åˆå§‹åŒ–Engineï¼šbuildæˆ–è€…load
 	std::ifstream fin(params.engineFilePath);
 	if (fin) {
-		nErrnoFlag = loadEngine(params);  // ¼ÓÔØEngineÎÄ¼ş
+		nErrnoFlag = loadEngine(params);  // åŠ è½½Engineæ–‡ä»¶
 		if (nErrnoFlag != PD_OK)
 		{
 			LOG_F(INFO, "Loading Engine Failed");
@@ -39,40 +39,40 @@ CTrtEngine::CTrtEngine(const PARAMS_S& params, PD_S32& nErrnoFlag)
 		}
 	}
 	else {
-		nErrnoFlag = buildONNX(params); // ¹¹½¨EngineÎÄ¼ş£¬²¢±£´æ
+		nErrnoFlag = buildONNX(params); // æ„å»ºEngineæ–‡ä»¶ï¼Œå¹¶ä¿å­˜
 		if (nErrnoFlag != PD_OK) {
 			LOG_F(INFO, "Building ONNX Failed");
 			return;
 		}
 	}
 
-	// 2. »ñµÃÊäÈëÊä³öÎ¬¶È
+	// 2. è·å¾—è¾“å…¥è¾“å‡ºç»´åº¦
 	PD_S32 num_input_output = mEngine->getNbBindings();
 	for (PD_S32 i = 0; i < num_input_output; i++) {
-		if (mEngine->bindingIsInput(i)) {//Èç¹ûÊÇÊäÈë½Úµã
-			auto inputName_i = mEngine->getBindingName(i); // »ñµÃiµÄÊäÈë½ÚµãÃû³Æ
-			mInputTensorNames.push_back(inputName_i);		// ½«½ÚµãÃû³Æ·ÅÈëmInputTensorNames
-			auto inputDims_i = mEngine->getBindingDimensions(i); // »ñµÃ½ÚµãiµÄÎ¬¶È
+		if (mEngine->bindingIsInput(i)) {//å¦‚æœæ˜¯è¾“å…¥èŠ‚ç‚¹
+			auto inputName_i = mEngine->getBindingName(i); // è·å¾—içš„è¾“å…¥èŠ‚ç‚¹åç§°
+			mInputTensorNames.push_back(inputName_i);		// å°†èŠ‚ç‚¹åç§°æ”¾å…¥mInputTensorNames
+			auto inputDims_i = mEngine->getBindingDimensions(i); // è·å¾—èŠ‚ç‚¹içš„ç»´åº¦
 			mInputDims.push_back(inputDims_i);
 		}
-		else {//Èç¹ûÊÇÊä³ö½Úµã
-			auto outputName_i = mEngine->getBindingName(i); // »ñµÃiµÄÊä³ö½ÚµãÃû³Æ
-			mOutputTensorNames.push_back(outputName_i);		// ½«½ÚµãÃû³Æ·ÅÈëmOutputTensorNames
-			auto outputDims_i = mEngine->getBindingDimensions(i); // »ñµÃ½ÚµãiµÄÎ¬¶È
+		else {//å¦‚æœæ˜¯è¾“å‡ºèŠ‚ç‚¹
+			auto outputName_i = mEngine->getBindingName(i); // è·å¾—içš„è¾“å‡ºèŠ‚ç‚¹åç§°
+			mOutputTensorNames.push_back(outputName_i);		// å°†èŠ‚ç‚¹åç§°æ”¾å…¥mOutputTensorNames
+			auto outputDims_i = mEngine->getBindingDimensions(i); // è·å¾—èŠ‚ç‚¹içš„ç»´åº¦
 			mOutputDims.push_back(outputDims_i);
 		}
 	}
 	nErrnoFlag = PD_OK;
 }
 
-// \! »ñÈ¡ICudaEngineÖ¸Õë
+// \! è·å–ICudaEngineæŒ‡é’ˆ
 std::shared_ptr<nvinfer1::ICudaEngine> CTrtEngine::Get() const
 {
 	return mEngine;
 }
 
-// \! ¼ÓÔØEngineÎÄ¼ş
-// \@param  params ²ÎÊı½á¹¹Ìå
+// \! åŠ è½½Engineæ–‡ä»¶
+// \@param  params å‚æ•°ç»“æ„ä½“
 PD_S32 CTrtEngine::loadEngine(const PARAMS_S& params)
 {
 	std::fstream file;
@@ -103,8 +103,8 @@ PD_S32 CTrtEngine::loadEngine(const PARAMS_S& params)
 	return PD_OK;
 }
 
-// \! ¹¹½¨ºÍ´æ´¢Engine
-// \@param  params ²ÎÊı½á¹¹Ìå
+// \! æ„å»ºå’Œå­˜å‚¨Engine
+// \@param  params å‚æ•°ç»“æ„ä½“
 PD_S32 CTrtEngine::buildONNX(const PARAMS_S& params)
 {
 	LOG_F(INFO, "Building engine from onnx file, this may take few minutes, please wait ...");
@@ -147,7 +147,7 @@ PD_S32 CTrtEngine::buildONNX(const PARAMS_S& params)
 	}
 
 	// 5. parsed
-	//½âÎöONNXÄ£ĞÍ
+	//è§£æONNXæ¨¡å‹
 	auto parsed = parser->parseFromFile(params.onnxFilePath.c_str(),
 		static_cast<PD_S32>(sample::gLogger.getReportableSeverity()));
 	if (!parsed)
