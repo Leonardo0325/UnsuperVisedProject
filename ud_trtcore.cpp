@@ -6,9 +6,9 @@
 #pragma comment( lib,"winmm.lib" )
 #define MY_MSG WM_USER+100
 const  int MAX_INFO_SIZE = 20;
-// \! ³õÊ¼»¯
-// \@param params     ³õÊ¼»¯²ÎÊı
-// \@param nErrnoFlag ³õÊ¼»¯´íÎóÂë£¬ÏêÇé¼ûparams.h
+// \! åˆå§‹åŒ–
+// \@param params     åˆå§‹åŒ–å‚æ•°
+// \@param nErrnoFlag åˆå§‹åŒ–é”™è¯¯ç ï¼Œè¯¦æƒ…è§params.h
 CTrtCore::CTrtCore() : m_hWnd(nullptr), m_hLogThread(nullptr), m_bStopListening(false)// : m_hWnd(nullptr), m_hLogThread(nullptr), m_bStopListening(false)
 {
 	m_pcUd = reinterpret_cast<CUnSuperviseDeployDlg*>(AfxGetMainWnd());
@@ -18,18 +18,18 @@ CTrtCore::~CTrtCore()
 {
 	if (m_hLogThread != nullptr)
 	{
-		// µÈ´ıÈÕÖ¾Ïß³Ì½áÊø
+		// ç­‰å¾…æ—¥å¿—çº¿ç¨‹ç»“æŸ
 		WaitForSingleObject(m_hLogThread, INFINITE);
 		CloseHandle(m_hLogThread);
 	}
 }
 //void CTrtCore::tcStartListrning()
 //{
-//	// »ñÈ¡MFC½çÃæÀàµÄ¾ä±ú
+//	// è·å–MFCç•Œé¢ç±»çš„å¥æŸ„
 //	CUnSuperviseDeployDlg* pMainDlg = reinterpret_cast<CUnSuperviseDeployDlg*>(AfxGetMainWnd());
 //	m_hWnd = pMainDlg->GetSafeHwnd();
 //
-//	// ´´½¨ÈÕÖ¾Ïß³Ì
+//	// åˆ›å»ºæ—¥å¿—çº¿ç¨‹
 //	UNIT uDeploy;
 //	(void*)_beginthreadex(NULL, 0, tcLogThreadProc, this, 0, &uDeploy);
 //}
@@ -39,55 +39,7 @@ CTrtCore::~CTrtCore()
 //}
 std::shared_ptr<TRTCore_ctx> CTrtCore::init(const PARAMS_S& params, PD_S32& nErrnoFlag)
 {
-	//::PostMessage(m_hWnd, NULL, WM_USER, WM_USER, PM_NOREMOVE);
-	//m_pcUd->m_editLoguru.SetWindowText("asdasdasd");
-	std::ofstream outputFile("../loguru.txt"); // ´ò¿ªoutput.txtÎÄ¼şÓÃÓÚĞ´Èë
-	if (outputFile.is_open()) { // ¼ì²éÎÄ¼şÊÇ·ñ³É¹¦´ò¿ª
-		// ½«Êä³öĞÅÏ¢Ğ´ÈëÎÄ¼ş
-		outputFile << "Init Start ......\n";
-	}
-	LOG_F(INFO, "Init Start ......");
-	try {
-		// 1. ÅĞ¶Ï´ËµçÄÔGPUÊÇ·ñ¼æÈİ´úÂë·ñ
-		if (!IsCompatible(params.gpuId)) {
-			nErrnoFlag = PD_WRONG_CUDA;
-			
-			LOG_F(INFO, "GPU Compatible Error");
-			return nullptr;
-		}
-		std::string log_ = std::string("Using GPU No. ") + std::to_string(params.gpuId);
-		outputFile << log_.c_str()<<std::endl;
-		LOG_F(INFO, log_.c_str());
 
-		// 2. build Engine. Éú³ÉÒıÇæ
-		std::shared_ptr< CTrtEngine> engine_ptr(new CTrtEngine(params, nErrnoFlag));
-		if (nErrnoFlag != PD_OK) {
-			outputFile << "Can't build or load engine file \n";
-			LOG_F(INFO, "Can't build or load engine file");
-			return nullptr;
-		}
-
-		// 3.generate Contexts pools£¬ Í¨¹ıÒıÇæºÍÒ»Ğ©ÅäÖÃ²ÎÊı£¬»ñµÃÖ´ĞĞÉÏÏÂÎÄ£¬Ïß³Ì³Ø
-		ContextPool<ExecContext> pool;
-		for (PD_S32 i = 0; i < params.maxThread; ++i)
-		{
-			std::unique_ptr<ExecContext> context(new ExecContext(params.gpuId, engine_ptr->Get()));
-			pool.Push(std::move(context));
-		}
-		if (pool.Size() == 0) {
-			nErrnoFlag = PD_WRONG_CUDA;
-			outputFile << "No suitable CUDA device \n";
-			LOG_F(INFO, "No suitable CUDA device");
-			return nullptr;
-		}
-
-		// 4.²úÉúÖ´ĞĞÉÏÏÂÎÄ
-		std::shared_ptr<TRTCore_ctx> ctx(new TRTCore_ctx{ params,  engine_ptr, std::move(pool) });
-		outputFile << "Init Successfully !!!! \n";
-		LOG_F(INFO, "Init Successfully !!!!");
-
-		return ctx;
-	}
 	catch (const std::invalid_argument& ex) {
 		outputFile << "Init failed !!! \n";
 		LOG_F(INFO, "Init failed !!!!");
@@ -107,15 +59,7 @@ cv::Mat Resize(const cv::Mat& src, PD_S32 dst_height, PD_S32 dst_width,
 	else if (PD_S32erpolation == "area") {
 		cv::resize(src, dst, dst.size(), 0, 0, cv::INTER_AREA);
 	}
-	else if (PD_S32erpolation == "bicubic") {
-		cv::resize(src, dst, dst.size(), 0, 0, cv::INTER_CUBIC);
-	}
-	else if (PD_S32erpolation == "lanczos") {
-		cv::resize(src, dst, dst.size(), 0, 0, cv::INTER_LANCZOS4);
-	}
-	else {
-		assert(0);
-	}
+	
 	return dst;
 }
 cv::Mat Normalize(cv::Mat& src, const std::vector<PD_FLOAT>& mean, const std::vector<PD_FLOAT>& std,
@@ -136,103 +80,68 @@ cv::Mat Normalize(cv::Mat& src, const std::vector<PD_FLOAT>& mean, const std::ve
 		cv::cvtColor(dst, dst, cv::COLOR_BGR2RGB);
 	}
 
-	auto _mean = mean;
-	auto _std = std;
-	for (auto i = mean.size(); i < 4; ++i) {
-		_mean.push_back(0.);
-		_std.push_back(1.0);
-	}
-	cv::Scalar mean_scalar(_mean[0], _mean[1], _mean[2], _mean[3]);
-	cv::Scalar std_scalar(1.0 / _std[0], 1.0 / _std[1], 1.0 / _std[2], 1.0 / _std[3]);
 
-	cv::subtract(dst, mean_scalar, dst);
-	cv::multiply(dst, std_scalar, dst);
 	return dst;
 }
-//Òì³£¼ì²âÔ¤´¦Àí
+//å¼‚å¸¸æ£€æµ‹é¢„å¤„ç†
 cv::Mat pre_process(cv::Mat& image) {
 	std::vector<PD_FLOAT> mean = { 0.485, 0.456, 0.406 };
 	std::vector<PD_FLOAT> std = { 0.229, 0.224, 0.225 };
 	cv::Mat resized_image = Resize(image, 224, 224, "area");
-	// ¹éÒ»»¯
-	// convertToÖ±½Ó½«ËùÓĞÖµ³ıÒÔ255,normalizeµÄNORM_MINMAXÊÇ½«Ô­Ê¼Êı¾İ·¶Î§±ä»»µ½0~1Ö®¼ä,convertTo¸ü·ûºÏÉî¶ÈÑ§Ï°µÄ×ö·¨
+	// å½’ä¸€åŒ–
+	// convertToç›´æ¥å°†æ‰€æœ‰å€¼é™¤ä»¥255,normalizeçš„NORM_MINMAXæ˜¯å°†åŸå§‹æ•°æ®èŒƒå›´å˜æ¢åˆ°0~1ä¹‹é—´,convertToæ›´ç¬¦åˆæ·±åº¦å­¦ä¹ çš„åšæ³•
 	resized_image.convertTo(resized_image, CV_32FC3, 1.0 / 255, 0);
-	// ±ê×¼»¯
+	// æ ‡å‡†åŒ–
 	resized_image = Normalize(resized_image, mean, std);
 	return resized_image;
 }
 
 
 
-// \! Òì³£¼ì²â
-// \@param ctx:Ö´ĞĞÉÏÏÂÎÄ
-// \@param cvImages:ÊäÈëÍ¼Æ¬ÁĞ±í£¬Mat
-// \@param outputs:Êä³öÍ¼Æ¬Êı×é£¬Mat
+// \! å¼‚å¸¸æ£€æµ‹
+// \@param ctx:æ‰§è¡Œä¸Šä¸‹æ–‡
+// \@param cvImages:è¾“å…¥å›¾ç‰‡åˆ—è¡¨ï¼ŒMat
+// \@param outputs:è¾“å‡ºå›¾ç‰‡æ•°ç»„ï¼ŒMat
 returnResult_S CTrtCore::anomaly(std::shared_ptr<TRTCore_ctx> ctx, const std::vector<cv::Mat>& cvImages, std::vector<cv::Mat>& outputs, PD_S32 thresh)
 {
 	cv::Mat M, M1, T, F;
-	// 1.ctxÊÇ·ñ³õÊ¼»¯³É¹¦
+	// 1.ctxæ˜¯å¦åˆå§‹åŒ–æˆåŠŸ
 	if (ctx == nullptr) {
 		LOG_F(INFO, "Init failed, can't call anomaly.");
 		return returnResult_S(M, M1, T, F, PD_UNKNOW_ERROR);
 	}
 
-	// 2. NetType ÊÇ·ñÕıÈ·
-	//netType=4,±íÊ¾Òì³£¼ì²â
+	// 2. NetType æ˜¯å¦æ­£ç¡®
+	//netType=4,è¡¨ç¤ºå¼‚å¸¸æ£€æµ‹
 	if (ctx->params.netType != PD_NETWORK_ANOMALY)
 	{
-		LOG_F(INFO, "Illegal calls£¬please check your NetWorkType");
+		LOG_F(INFO, "Illegal callsï¼Œplease check your NetWorkType");
 		return returnResult_S(M, M1, T, F, PD_WRONG_CALL);
 	}
 
-	// 3.EngineĞÅÏ¢ÓëÊäÈëĞÅÏ¢¶Ô±È
+	// 3.Engineä¿¡æ¯ä¸è¾“å…¥ä¿¡æ¯å¯¹æ¯”
 	PD_S32 engine_batch, engine_channels, engine_height, engine_width;
-	//thisÊÇÖ¸µ±Ç°Ö¸Ïò
-	this->getInputDims(ctx, engine_batch, engine_channels, engine_height, engine_width);// »ñµÃÊäÈëÎ¬¶ÈĞÅÏ¢
+	//thisæ˜¯æŒ‡å½“å‰æŒ‡å‘
+	this->getInputDims(ctx, engine_batch, engine_channels, engine_height, engine_width);// è·å¾—è¾“å…¥ç»´åº¦ä¿¡æ¯
 	PD_S32 engine_output_batch, engine_output_channel, engine_output_height, engine_output_width;
-	this->getOutputDims(ctx, engine_output_batch, engine_output_channel, engine_output_height, engine_output_width);//»ñµÃÊä³öÎ¬¶ÈĞÅÏ¢
-	auto engine_input_name = this->getInputNames(ctx);  //»ñµÃÊäÈëÃû³Æ
-	auto engine_output_name = this->getOutputNames(ctx);//»ñµÃÊä³öÃû³Æ
-	// 3.1 batchsizeÅĞ¶Ï
+	this->getOutputDims(ctx, engine_output_batch, engine_output_channel, engine_output_height, engine_output_width);//è·å¾—è¾“å‡ºç»´åº¦ä¿¡æ¯
+	auto engine_input_name = this->getInputNames(ctx);  //è·å¾—è¾“å…¥åç§°
+	auto engine_output_name = this->getOutputNames(ctx);//è·å¾—è¾“å‡ºåç§°
+	// 3.1 batchsizeåˆ¤æ–­
 	if (cvImages.size() > engine_batch) {
-		LOG_F(INFO, "ÊäÈëÍ¼Æ¬Êı×éµÄbatchsize³¬¹ıEngineÔ¤¶¨Öµ ");
+		LOG_F(INFO, "è¾“å…¥å›¾ç‰‡æ•°ç»„çš„batchsizeè¶…è¿‡Engineé¢„å®šå€¼ ");
 		return returnResult_S(M, M1, T, F, PD_WRONG_IMG);
 	}
-	// 3.2 c,h,wÅĞ¶Ï
-	std::vector<cv::Mat> imgs;//´æ·Å×îÖÕµÄimgs
+	// 3.2 c,h,wåˆ¤æ–­
+	std::vector<cv::Mat> imgs;//å­˜æ”¾æœ€ç»ˆçš„imgs
 	for (PD_S32 i = 0; i < cvImages.size(); i++) {
 		cv::Mat cv_img = cvImages[i].clone();
 		if (cv_img.channels() != engine_channels) {
-			LOG_F(ERROR, "ÊäÈëÍ¼Æ¬µÄÍ¨µÀÊıÓëEngine²»·û ");
+			LOG_F(ERROR, "è¾“å…¥å›¾ç‰‡çš„é€šé“æ•°ä¸Engineä¸ç¬¦ ");
 			return returnResult_S(M, M1, T, F, PD_WRONG_IMG);
 		}
-		std::cout << cv_img.cols << std::endl;
-		if (engine_height != cv_img.cols || engine_width != cv_img.rows) {
-			LOG_F(WARNING, "ÊäÈëµÄÍ¼Æ¬³ß´çÓëEngine²»Ïà·û,×Ô¶¯resize");
-			/*uchar* firstRow = cv_img.ptr<uchar>(0, 0);
-			std::cout << cv_img << std::endl;*/
-			cv::resize(cv_img, cv_img, cv::Size(engine_height, engine_width), cv::INTER_LINEAR); // Ê¹ÓÃ´Ë·½·¨Óëonnx£¨python£©Ê±Ïñ¶ÔÓ¦
-			PD_S32 height1 = cv_img.rows;
-			PD_S32 width1 = cv_img.cols;
-			PD_S32 nc = cv_img.channels();
-			cv::Mat dst;
-			dst.create(cv_img.size(), cv_img.type());
-			for (PD_S32 row = 0; row < height1; row++) {
-				for (PD_S32 col = 0; col < width1; col++) {
-					/*PD_S32 b = image.at<cv::Vec3b>(row, col)[0];
-					PD_S32 g = image.at<cv::Vec3b>(row, col)[1];
-					PD_S32 r = image.at<cv::Vec3b>(row, col)[2];*/
-					PD_S32 r = cv_img.at<cv::Vec3b>(row, col)[2];
-					//std::cout << r << std::endl;
-					//PD_S32 g = image.at<uchar>(row, col);
-					//PD_S32 r = image.at<uchar>(row, col);
-					//std::cout << r << std::endl;
-					/*dst.at<cv::Vec3b>(row, col)[0] = 255 - b;
-					dst.at<cv::Vec3b>(row, col)[1] = 255 - g;
-					dst.at<cv::Vec3b>(row, col)[2] = 255 - r;*/
-				}
-			}
-			uchar * firstRow1 = cv_img.ptr<uchar>(0, 0);//»ñÈ¡ÏñËØÖµ
+		
+			uchar * firstRow1 = cv_img.ptr<uchar>(0, 0);//è·å–åƒç´ å€¼
 			//std::cout << cv_img << std::endl;
 		}
 		imgs.push_back(cv_img);
@@ -243,63 +152,42 @@ returnResult_S CTrtCore::anomaly(std::shared_ptr<TRTCore_ctx> ctx, const std::ve
 	}
 	cv::Mat img;
 	img = imgs[0];
-	// 4. Ô¤´¦ÀíÍ¼Æ¬
-	samplesCommon::BufferManager buffers(ctx.get()->engine->Get());// ·ÖÅäÏÔ´æ£¨ÊäÈëºÍÊä³ö£©
-	// Ô¤´¦Àí
+	// 4. é¢„å¤„ç†å›¾ç‰‡
+	samplesCommon::BufferManager buffers(ctx.get()->engine->Get());// åˆ†é…æ˜¾å­˜ï¼ˆè¾“å…¥å’Œè¾“å‡ºï¼‰
+	// é¢„å¤„ç†
 	if (PD_OK != normalization(buffers, imgs, ctx.get()->params, engine_input_name))
 	{
-		LOG_F(INFO, "CPU2GPU ÄÚ´æ¿½±´Ê§°Ü");
+		LOG_F(INFO, "CPU2GPU å†…å­˜æ‹·è´å¤±è´¥");
 		return returnResult_S(M, M1, T, F, PD_UNKNOW_ERROR);
 	}
 
 	buffers.copyInputToDevice();
 	DWORD t1, t2;
 	//t1 = timeGetTime();
-	// 5. Ö´ĞĞÍÆÀí¹ı³Ì
-	// mContext->executeV2 ÊÇÕâ¸öÏîÄ¿ÖĞ×îºËĞÄµÄÒ»¾ä´úÂë£¬Ä£ĞÍ¼ì²â¾ÍÊÇÕâÒ»²½¡£
+	// 5. æ‰§è¡Œæ¨ç†è¿‡ç¨‹
+	// mContext->executeV2 æ˜¯è¿™ä¸ªé¡¹ç›®ä¸­æœ€æ ¸å¿ƒçš„ä¸€å¥ä»£ç ï¼Œæ¨¡å‹æ£€æµ‹å°±æ˜¯è¿™ä¸€æ­¥ã€‚
 	ScopedContext<ExecContext> context(ctx->pool);
 	auto ctx_ = context->getContext();
 	if (!ctx_->executeV2(buffers.getDeviceBindings().data()))
 	{
-		LOG_F(INFO, "Ö´ĞĞÍÆÀíÊ§°Ü");
+		LOG_F(INFO, "æ‰§è¡Œæ¨ç†å¤±è´¥");
 		return returnResult_S(M, M1, T, F, PD_UNKNOW_ERROR);
 	}
 	//t2 = timeGetTime();
-	//std::cout << "Ä£ĞÍÍÆÀíÊ±¼ä : " << (PD_DOUBLE)(t2 - t1) << "ms" << std::endl;
-	// 6. ºó´¦Àí
+	//std::cout << "æ¨¡å‹æ¨ç†æ—¶é—´ : " << (PD_DOUBLE)(t2 - t1) << "ms" << std::endl;
+	// 6. åå¤„ç†
 	buffers.copyOutputToHost();
 
-	ReturnImgs_S anomalyImg = anomalyPost(
-		buffers,
-		img,
-		outputs,
-		engine_output_batch,
-		engine_output_channel,
-		engine_output_height,
-		engine_output_width,
-		engine_output_name,
-		thresh);
-	returnResult_S ImgResults;
-	ImgResults.Img = anomalyImg.Img;
-	ImgResults.Img1 = anomalyImg.Img1;
-	ImgResults.nLY = anomalyImg.nLY;
-	ImgResults.FinalImg = anomalyImg.FinalImg;
-	ImgResults.ThreshImg = anomalyImg.ThreshImg;
-	//std::cout << outputs[1] << std::endl;
-
-	//if (PD_OK != anomalyPostFlag) {
-	//	LOG_F(INFO, "GPU2CPU ÄÚ´æ¿½±´Ê§°Ü");
-	//	return returnResult_S(M, M1, T, F, PD_UNKNOW_ERROR);
-	//}
+	
 
 	return ImgResults;
 
 }
 
 
-// \! »ñÈ¡ÏÔ¿¨ÊıÁ¿
-// \@param ctx:Ö´ĞĞÉÏÏÂÎÄ
-// \@param number:gpuÊıÁ¿
+// \! è·å–æ˜¾å¡æ•°é‡
+// \@param ctx:æ‰§è¡Œä¸Šä¸‹æ–‡
+// \@param number:gpuæ•°é‡
 PD_S32 CTrtCore::getNumberGPU(std::shared_ptr<TRTCore_ctx> ctx, PD_S32& number)
 {
 	cudaError_t st = cudaGetDeviceCount(&number);
@@ -310,13 +198,13 @@ PD_S32 CTrtCore::getNumberGPU(std::shared_ptr<TRTCore_ctx> ctx, PD_S32& number)
 	return PD_OK;
 }
 
-// \! »ñÈ¡ÊäÈëÎ¬¶È
-// \@param ctx:Ö´ĞĞÉÏÏÂÎÄ
+// \! è·å–è¾“å…¥ç»´åº¦
+// \@param ctx:æ‰§è¡Œä¸Šä¸‹æ–‡
 // \@param nBatch:batchsize
 // \@param nChannels:channels
 // \@param nHeight:height
 // \@param nWidth:width
-// \@param index:µÚindex¸öÊäÈë£¬¼ÓÈëonnxÓĞ¶à¸öÊäÈë£¬ÔòÍ¨¹ıindexÀ´Ö¸¶¨
+// \@param index:ç¬¬indexä¸ªè¾“å…¥ï¼ŒåŠ å…¥onnxæœ‰å¤šä¸ªè¾“å…¥ï¼Œåˆ™é€šè¿‡indexæ¥æŒ‡å®š
 PD_S32 CTrtCore::getInputDims(std::shared_ptr<TRTCore_ctx> ctx, PD_S32& nBatch, PD_S32& nChannels, PD_S32& nHeight, PD_S32& nWidth, PD_S32 index)
 {
 	if (ctx == nullptr) {
@@ -331,12 +219,12 @@ PD_S32 CTrtCore::getInputDims(std::shared_ptr<TRTCore_ctx> ctx, PD_S32& nBatch, 
 	return PD_OK;
 }
 
-// \! »ñÈ¡Êä³öÎ¬¶È
-// \@param ctx£ºÖ´ĞĞÉÏÏÂÎÄ
+// \! è·å–è¾“å‡ºç»´åº¦
+// \@param ctxï¼šæ‰§è¡Œä¸Šä¸‹æ–‡
 // \@param nBatch:batchsize
 // \@param nHeight:Height
 // \@param nWidth:Width
-// \@param index:µÚindex¸öÊä³ö£¬¼ÙÈçonnxÓĞ¶à¸öÊä³ö£¬ÔòÍ¨¹ıindexÀ´Ö¸¶¨
+// \@param index:ç¬¬indexä¸ªè¾“å‡ºï¼Œå‡å¦‚onnxæœ‰å¤šä¸ªè¾“å‡ºï¼Œåˆ™é€šè¿‡indexæ¥æŒ‡å®š
 PD_S32 CTrtCore::getOutputDims(std::shared_ptr<TRTCore_ctx> ctx, PD_S32& nBatch, PD_S32& nChannel, PD_S32& nHeight, PD_S32& nWidth, PD_S32 index)
 {
 	if (ctx == nullptr) {
@@ -350,11 +238,11 @@ PD_S32 CTrtCore::getOutputDims(std::shared_ptr<TRTCore_ctx> ctx, PD_S32& nBatch,
 	nWidth = outputDims.d[3];
 	return PD_OK;
 }
-// \! »ñÈ¡Êä³öÎ¬¶È
-// \@param ctx£ºÖ´ĞĞÉÏÏÂÎÄ
+// \! è·å–è¾“å‡ºç»´åº¦
+// \@param ctxï¼šæ‰§è¡Œä¸Šä¸‹æ–‡
 // \@param nBatch:batchsize
-// \@param nNumClass:NumClass Àà±ğÊı£¬Õë¶Ô·ÖÀà
-// \@param index:µÚindex¸öÊä³ö£¬¼ÙÈçonnxÓĞ¶à¸öÊä³ö£¬ÔòÍ¨¹ıindexÀ´Ö¸¶¨
+// \@param nNumClass:NumClass ç±»åˆ«æ•°ï¼Œé’ˆå¯¹åˆ†ç±»
+// \@param index:ç¬¬indexä¸ªè¾“å‡ºï¼Œå‡å¦‚onnxæœ‰å¤šä¸ªè¾“å‡ºï¼Œåˆ™é€šè¿‡indexæ¥æŒ‡å®š
 PD_S32 CTrtCore::getOutputDims2(std::shared_ptr<TRTCore_ctx> ctx, PD_S32& nBatch, PD_S32& nNumClass, PD_S32 index)
 {
 	if (ctx == nullptr) {
@@ -367,18 +255,18 @@ PD_S32 CTrtCore::getOutputDims2(std::shared_ptr<TRTCore_ctx> ctx, PD_S32& nBatch
 	return PD_OK;
 }
 
-// \! »ñÈ¡ÊäÈëÃû³Æ
-// \@param ctx£ºÖ´ĞĞÉÏÏÂÎÄ
-// \@param index:µÚindex¸öÊä³ö£¬¼ÙÈçonnxÓĞ¶à¸öÊä³ö£¬ÔòÍ¨¹ıindexÀ´Ö¸¶¨
+// \! è·å–è¾“å…¥åç§°
+// \@param ctxï¼šæ‰§è¡Œä¸Šä¸‹æ–‡
+// \@param index:ç¬¬indexä¸ªè¾“å‡ºï¼Œå‡å¦‚onnxæœ‰å¤šä¸ªè¾“å‡ºï¼Œåˆ™é€šè¿‡indexæ¥æŒ‡å®š
 std::string CTrtCore::getInputNames(std::shared_ptr<TRTCore_ctx> ctx, PD_S32 index)
 {
 	auto engine_input_name = ctx.get()->engine->mInputTensorNames[index];
 	return engine_input_name;
 }
 
-// \! »ñÈ¡Êä³öÃû³Æ
-// \@param ctx£ºÖ´ĞĞÉÏÏÂÎÄ
-// \@param index:µÚindex¸öÊä³ö£¬¼ÙÈçonnxÓĞ¶à¸öÊä³ö£¬ÔòÍ¨¹ıindexÀ´Ö¸¶¨
+// \! è·å–è¾“å‡ºåç§°
+// \@param ctxï¼šæ‰§è¡Œä¸Šä¸‹æ–‡
+// \@param index:ç¬¬indexä¸ªè¾“å‡ºï¼Œå‡å¦‚onnxæœ‰å¤šä¸ªè¾“å‡ºï¼Œåˆ™é€šè¿‡indexæ¥æŒ‡å®š
 std::string CTrtCore::getOutputNames(std::shared_ptr<TRTCore_ctx> ctx, PD_S32 index)
 {
 	auto engine_output_name = ctx.get()->engine->mOutputTensorNames[index];
