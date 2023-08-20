@@ -143,73 +143,7 @@ void CCamera::OnBnClickedButton1()
 	}
 
 	// ch:将值加入到信息列表框中并显示出来 | en:Add value to the information list box and display
-	for (unsigned int i = 0; i < m_stDevList.nDeviceNum; i++)
-	{
-		MV_CC_DEVICE_INFO* pDeviceInfo = m_stDevList.pDeviceInfo[i];
-		if (NULL == pDeviceInfo)
-		{
-			continue;
-		}
-
-		wchar_t* pUserName = NULL;
-		if (pDeviceInfo->nTLayerType == MV_GIGE_DEVICE)
-		{
-			int nIp1 = ((m_stDevList.pDeviceInfo[i]->SpecialInfo.stGigEInfo.nCurrentIp & 0xff000000) >> 24);
-			int nIp2 = ((m_stDevList.pDeviceInfo[i]->SpecialInfo.stGigEInfo.nCurrentIp & 0x00ff0000) >> 16);
-			int nIp3 = ((m_stDevList.pDeviceInfo[i]->SpecialInfo.stGigEInfo.nCurrentIp & 0x0000ff00) >> 8);
-			int nIp4 = (m_stDevList.pDeviceInfo[i]->SpecialInfo.stGigEInfo.nCurrentIp & 0x000000ff);
-
-			if (strcmp("", (LPCSTR)(pDeviceInfo->SpecialInfo.stGigEInfo.chUserDefinedName)) != 0)
-			{
-				DWORD dwLenUserName = MultiByteToWideChar(CP_ACP, 0, (LPCSTR)(pDeviceInfo->SpecialInfo.stGigEInfo.chUserDefinedName), -1, NULL, 0);
-				pUserName = new wchar_t[dwLenUserName];
-				MultiByteToWideChar(CP_ACP, 0, (LPCSTR)(pDeviceInfo->SpecialInfo.stGigEInfo.chUserDefinedName), -1, pUserName, dwLenUserName);
-			}
-			else
-			{
-				char strUserName[256] = { 0 };
-				sprintf_s(strUserName, 256, "%s %s (%s)", pDeviceInfo->SpecialInfo.stGigEInfo.chManufacturerName,
-					pDeviceInfo->SpecialInfo.stGigEInfo.chModelName,
-					pDeviceInfo->SpecialInfo.stGigEInfo.chSerialNumber);
-				DWORD dwLenUserName = MultiByteToWideChar(CP_ACP, 0, (LPCSTR)(strUserName), -1, NULL, 0);
-				pUserName = new wchar_t[dwLenUserName];
-				MultiByteToWideChar(CP_ACP, 0, (LPCSTR)(strUserName), -1, pUserName, dwLenUserName);
-			}
-			strMsg.Format(_T("[%d]GigE:    %s  (%d.%d.%d.%d)"), i, pUserName, nIp1, nIp2, nIp3, nIp4);
-		}
-		else if (pDeviceInfo->nTLayerType == MV_USB_DEVICE)
-		{
-			if (strcmp("", (char*)pDeviceInfo->SpecialInfo.stUsb3VInfo.chUserDefinedName) != 0)
-			{
-				DWORD dwLenUserName = MultiByteToWideChar(CP_ACP, 0, (LPCSTR)(pDeviceInfo->SpecialInfo.stUsb3VInfo.chUserDefinedName), -1, NULL, 0);
-				pUserName = new wchar_t[dwLenUserName];
-				MultiByteToWideChar(CP_ACP, 0, (LPCSTR)(pDeviceInfo->SpecialInfo.stUsb3VInfo.chUserDefinedName), -1, pUserName, dwLenUserName);
-			}
-			else
-			{
-				char strUserName[256] = { 0 };
-				sprintf_s(strUserName, 256, "%s %s (%s)", pDeviceInfo->SpecialInfo.stUsb3VInfo.chManufacturerName,
-					pDeviceInfo->SpecialInfo.stUsb3VInfo.chModelName,
-					pDeviceInfo->SpecialInfo.stUsb3VInfo.chSerialNumber);
-				DWORD dwLenUserName = MultiByteToWideChar(CP_ACP, 0, (LPCSTR)(strUserName), -1, NULL, 0);
-				pUserName = new wchar_t[dwLenUserName];
-				MultiByteToWideChar(CP_ACP, 0, (LPCSTR)(strUserName), -1, pUserName, dwLenUserName);
-			}
-			strMsg.Format(_T("[%d]UsbV3:  %s"), i, pUserName);
-		}
-		else
-		{
-			ShowErrorMsg(TEXT("Unknown device enumerated"), 0);
-		}
-		m_ctrlDeviceCombo.AddString(strMsg);
-
-		if (pUserName)
-		{
-			delete[] pUserName;
-			pUserName = NULL;
-		}
-	}
-
+	
 	if (0 == m_stDevList.nDeviceNum)
 	{
 		ShowErrorMsg(TEXT("No device"), 0);
@@ -282,21 +216,7 @@ void CCamera::OnBnClickedOpenButton()
 // ch:关闭设备 | en:Close Device
 int CCamera::CloseDevice()
 {
-	m_bThreadState = FALSE;
-	if (m_phGrabThread)
-	{
-		WaitForSingleObject(m_phGrabThread, INFINITE);
-		CloseHandle(m_phGrabThread);
-		m_phGrabThread = NULL;
-	}
-
-	if (m_pcMvCamera)
-	{
-		m_pcMvCamera->MC_Close();
-		delete m_pcMvCamera;
-		m_pcMvCamera = NULL;
-	}
-
+	
 	m_bStartGrabbing = FALSE;
 	m_bOpenDevice = FALSE;
 
@@ -457,33 +377,6 @@ bool CCamera::Convert2Mat(MV_FRAME_OUT_INFO_EX* pstImageInfo, unsigned char* pDa
 		return false;
 	}
 
-	cv::Mat srcImage;
-
-	//if (PixelType_Gvsp_Mono8 == pstImageInfo->enPixelType)                // Mono8类型
-	//{
-	//	srcImage = cv::Mat(pstImageInfo->nHeight, pstImageInfo->nWidth, CV_8UC1, pData);
-	//}
-	//else if (PixelType_Gvsp_RGB8_Packed == pstImageInfo->enPixelType)     // RGB8类型
-	//{
-		// Mat像素排列格式为BGR，需要转换
-		RGB2BGR(pData, pstImageInfo->nWidth, pstImageInfo->nHeight);
-		srcImage = cv::Mat(pstImageInfo->nHeight, pstImageInfo->nWidth, CV_8UC3, pData);
-		cout << srcImage << endl;
-		cv::imshow("asdads", srcImage);
-		cv::waitKey(0);
-	//}
-	//else
-	//{
-	//	printf("Unsupported pixel format\n");
-	//	return false;
-	//}
-
-	if (NULL == srcImage.data)
-	{
-		printf("Creat Mat failed.\n");
-		return false;
-	}
-
 	try
 	{
 		// ch:保存Mat图片 | en:Save converted image in a local file
@@ -557,12 +450,7 @@ void CCamera::OnBnClickedStopGrabbingButton()
 		m_phGrabThread = NULL;
 	}
 
-	int nRet = m_pcMvCamera->MC_StopGrabbing();
-	if (MV_OK != nRet)
-	{
-		ShowErrorMsg(TEXT("Stop grabbing fail"), nRet);
-		return;
-	}
+
 	m_bStartGrabbing = FALSE;
 	//EnableControls(TRUE);
 }
@@ -666,12 +554,7 @@ int CCamera::GetGain()
 {
 	MVCC_FLOATVALUE stFloatValue = { 0 };
 
-	int nRet = m_pcMvCamera->MC_GetFloatValue("Gain", &stFloatValue);
-	if (MV_OK != nRet)
-	{
-		return nRet;
-	}
-	m_dGainEdit = stFloatValue.fCurValue;
+
 
 	return MV_OK;
 }
