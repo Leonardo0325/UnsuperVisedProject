@@ -15,52 +15,7 @@ void disp_continue_message(HTuple hv_WindowHandle, HTuple hv_Color, HTuple hv_Bo
 	// Local iconic variables
 
 	// Local control variables
-	HTuple  hv_GenParamName, hv_GenParamValue, hv_ContinueMessage;
-
-	//This procedure displays 'Press Run (F5) to continue' in the
-	//lower right corner of the screen.
-	//It uses the procedure disp_message.
-	//
-	//Input parameters:
-	//WindowHandle: The window, where the text shall be displayed
-	//Color: defines the text color.
-	//   If set to '' or 'auto', the currently set color is used.
-	//Box: If set to 'true', the text is displayed in a box.
-	//
-	//Convert the parameter Box to generic parameters.
-	hv_GenParamName = HTuple();
-	hv_GenParamValue = HTuple();
-	if (0 != ((hv_Box.TupleLength()) > 0))
-	{
-		if (0 != (HTuple(hv_Box[0]) == HTuple("false")))
-		{
-			//Display no box
-			hv_GenParamName = hv_GenParamName.TupleConcat("box");
-			hv_GenParamValue = hv_GenParamValue.TupleConcat("false");
-		}
-		else if (0 != (HTuple(hv_Box[0]) != HTuple("true")))
-		{
-			//Set a color other than the default.
-			hv_GenParamName = hv_GenParamName.TupleConcat("box_color");
-			hv_GenParamValue = hv_GenParamValue.TupleConcat(HTuple(hv_Box[0]));
-		}
-	}
-	if (0 != ((hv_Box.TupleLength()) > 1))
-	{
-		if (0 != (HTuple(hv_Box[1]) == HTuple("false")))
-		{
-			//Display no shadow.
-			hv_GenParamName = hv_GenParamName.TupleConcat("shadow");
-			hv_GenParamValue = hv_GenParamValue.TupleConcat("false");
-		}
-		else if (0 != (HTuple(hv_Box[1]) != HTuple("true")))
-		{
-			//Set a shadow color other than the default.
-			hv_GenParamName = hv_GenParamName.TupleConcat("shadow_color");
-			hv_GenParamValue = hv_GenParamValue.TupleConcat(HTuple(hv_Box[1]));
-		}
-	}
-	//
+	
 	if (0 != (hv_Color == HTuple("")))
 	{
 		//disp_text does not accept an empty string for Color.
@@ -80,7 +35,7 @@ void CPreProcess::preAction(CString ModelPth,CString SavePth)
 {
 	std::string sSavePth((LPCTSTR)SavePth);
 	std::string sModelPth((LPCTSTR)ModelPth);
-	// Ê¹ÓÃstd::string¹¹ÔìHTuple
+	// ä½¿ç”¨std::stringæ„é€ HTuple
 	HTuple hSavePth(sSavePth.c_str());
 	HTuple hModelPth(sModelPth.c_str());
 
@@ -99,18 +54,6 @@ void CPreProcess::preAction(CString ModelPth,CString SavePth)
 	HTuple  hv_Scale, hv_Score, hv_I, hv_HomMat2DIdentity, hv_HomMat2DTranslate;
 	HTuple  hv_HomMat2DRotate, hv_HomMat2DScale, hv_Row, hv_Column;
 	HTuple  hv_Phi, hv_Length1, hv_Length2;
-
-	ReadImage(&ho_Image, hModelPth);
-	Rgb1ToGray(ho_Image, &ho_GrayImage);
-	GaussImage(ho_GrayImage, &ho_ImageGauss, 5);
-	GetImageSize(ho_Image, &hv_Width, &hv_Height);
-	SetWindowAttr("background_color", "black");
-	OpenWindow(0, 0, hv_Width, hv_Height, 0, "visible", "", &hv_WindowHandle);
-	HDevWindowStack::Push(hv_WindowHandle);
-	if (HDevWindowStack::IsOpen())
-		DispObj(ho_ImageGauss, HDevWindowStack::GetActive());
-	GenEmptyRegion(&ho_Regions);
-	hv_num_cir = 1;
 	{
 		HTuple end_val8 = hv_num_cir;
 		HTuple step_val8 = 1;
@@ -130,16 +73,16 @@ void CPreProcess::preAction(CString ModelPth,CString SavePth)
 
 	AreaCenter(ho_RegionUnion, &hv_Area, &hv_regiRow1, &hv_regiColumn1);
 
-	//¡¾1¡¿´´½¨Ä£°åÄ£ĞÍ
-	//Èç¹ûMetric= 'use_polarity'£¬Í¼Æ¬ºÍÄ£°å±ØĞëÒªÓĞÏàÍ¬µÄ¶Ô±È¶È¡£ÀıÈç£¬Èç¹ûÄ£ĞÍÊÇÒ»¸ö°µµÄÄ¿±êÔÚÒ»¸öÁÁµÄ±³¾°ÉÏ£¬ÄÇÃ´½ö½öÄÇĞ©±È±³¾°°µµÄÄ¿±ê¿ÉÒÔ±»ÕÒµ½;
-	//Èç¹ûMetric= 'ignore_global_polarity',Í¼Æ¬ºÍÄ£°å±ØĞëÒªÓĞÏàÍ¬»òÏà·´µÄ¶Ô±È¶È
+	//ã€1ã€‘åˆ›å»ºæ¨¡æ¿æ¨¡å‹
+	//å¦‚æœMetric= 'use_polarity'ï¼Œå›¾ç‰‡å’Œæ¨¡æ¿å¿…é¡»è¦æœ‰ç›¸åŒçš„å¯¹æ¯”åº¦ã€‚ä¾‹å¦‚ï¼Œå¦‚æœæ¨¡å‹æ˜¯ä¸€ä¸ªæš—çš„ç›®æ ‡åœ¨ä¸€ä¸ªäº®çš„èƒŒæ™¯ä¸Šï¼Œé‚£ä¹ˆä»…ä»…é‚£äº›æ¯”èƒŒæ™¯æš—çš„ç›®æ ‡å¯ä»¥è¢«æ‰¾åˆ°;
+	//å¦‚æœMetric= 'ignore_global_polarity',å›¾ç‰‡å’Œæ¨¡æ¿å¿…é¡»è¦æœ‰ç›¸åŒæˆ–ç›¸åçš„å¯¹æ¯”åº¦
 	CreateScaledShapeModel(ho_ImageReduced, 5, HTuple(-10).TupleRad(), HTuple(10).TupleRad(),
 		"auto", 0.7, 1.2, "auto", "auto", "ignore_global_polarity", "auto", "auto",
 		&hv_ModelID);
-	//¡¾2¡¿Éú³ÉÄ£°åÂÖÀª
+	//ã€2ã€‘ç”Ÿæˆæ¨¡æ¿è½®å»“
 	GetShapeModelContours(&ho_ModelContours, hv_ModelID, 1);
 
-	//¿´¿´Éú³ÉµÄÂÖÀª
+	//çœ‹çœ‹ç”Ÿæˆçš„è½®å»“
 	if (HDevWindowStack::IsOpen())
 		SetColor(HDevWindowStack::GetActive(), "red");
 	if (HDevWindowStack::IsOpen())
@@ -159,7 +102,7 @@ void CPreProcess::preAction(CString ModelPth,CString SavePth)
 		DispObj(ho_SearchImage, HDevWindowStack::GetActive());
 	//time(&start);
 	double start = GetTickCount();
-	//¡¾3¡¿Ñ°ÕÒÄ£°å£¬µÚÆß¸ö²ÎÊıÎªÉèÖÃÆ¥ÅäµÄ×îĞ¡·ÖÊı£¬µÚ°Ë¸ö²ÎÊıÎªÉèÖÃÆ¥ÅäµÄ¸öÊı£¬0±íÊ¾ÓĞ¶àÉÙ¸öÊ¶±ğ¶àÉÙ¸ö
+	//ã€3ã€‘å¯»æ‰¾æ¨¡æ¿ï¼Œç¬¬ä¸ƒä¸ªå‚æ•°ä¸ºè®¾ç½®åŒ¹é…çš„æœ€å°åˆ†æ•°ï¼Œç¬¬å…«ä¸ªå‚æ•°ä¸ºè®¾ç½®åŒ¹é…çš„ä¸ªæ•°ï¼Œ0è¡¨ç¤ºæœ‰å¤šå°‘ä¸ªè¯†åˆ«å¤šå°‘ä¸ª
 	FindScaledShapeModel(ho_SearchImage, hv_ModelID, HTuple(-10).TupleRad(), HTuple(10).TupleRad(),
 		0.5, 1.2, 0.6, 0, 0.5, "least_squares", 5, 0.8, &hv_Row3, &hv_Column3, &hv_Angle,
 		&hv_Scale, &hv_Score);
@@ -169,18 +112,18 @@ void CPreProcess::preAction(CString ModelPth,CString SavePth)
 		HTuple step_val46 = 1;
 		for (hv_I = 0; hv_I.Continue(end_val46, step_val46); hv_I += step_val46)
 		{
-			//Éú³ÉÒ»¸öµ¥Î»¾ØÕó
+			//ç”Ÿæˆä¸€ä¸ªå•ä½çŸ©é˜µ
 			HomMat2dIdentity(&hv_HomMat2DIdentity);
-			//Æ½ÒÆ
+			//å¹³ç§»
 			HomMat2dTranslate(hv_HomMat2DIdentity, HTuple(hv_Row3[hv_I]), HTuple(hv_Column3[hv_I]),
 				&hv_HomMat2DTranslate);
-			//Ğı×ª
+			//æ—‹è½¬
 			HomMat2dRotate(hv_HomMat2DTranslate, HTuple(hv_Angle[hv_I]), HTuple(hv_Row3[hv_I]),
 				HTuple(hv_Column3[hv_I]), &hv_HomMat2DRotate);
-			//·ÅËõ£¬µÃµ½×îÖÕµÄ·ÂÉä±ä»»¾ØÕó
+			//æ”¾ç¼©ï¼Œå¾—åˆ°æœ€ç»ˆçš„ä»¿å°„å˜æ¢çŸ©é˜µ
 			HomMat2dScale(hv_HomMat2DRotate, HTuple(hv_Scale[hv_I]), HTuple(hv_Scale[hv_I]),
 				HTuple(hv_Row3[hv_I]), HTuple(hv_Column3[hv_I]), &hv_HomMat2DScale);
-			//·ÂÉä±ä»»
+			//ä»¿å°„å˜æ¢
 			AffineTransContourXld(ho_ModelContours, &ho_ModelTrans, hv_HomMat2DScale);
 			if (HDevWindowStack::IsOpen())
 				DispObj(ho_ModelTrans, HDevWindowStack::GetActive());
